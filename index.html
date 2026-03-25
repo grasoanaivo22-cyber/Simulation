@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation SBR : Cas Pratique Émeraude IARD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Slate (Background), Blue (Primary/Trust), Emerald (Illusion of Health), Amber (SBR Warning), Rose (Prudential Danger) -->
+    <!-- Application Structure Plan: A linear, narrative-driven dashboard. It starts with the 'Traditional View' to establish a false sense of security. A user action triggers the 'SBR Diagnostic' phase, revealing hidden risks via charts, mimicking the supervisor's workflow. A final action introduces a real-world twist, requiring 'Prudential Judgment' to alter the final state. This guided structure forces the user to experience the paradigm shift conceptually. -->
+    <!-- Visualization & Content Choices: 
+         Phase 1 (Traditional): Stat cards (HTML/CSS) -> Goal: Show seemingly healthy numbers quickly.
+         Phase 2 (SBR Score): Half-Doughnut (Chart.js) -> Goal: Visualize the overall risk score clearly.
+         Phase 2 (Red Flags): 
+            - Claims Speed: Progress Bar (HTML/CSS) -> Goal: Visually represent the sluggishness of payouts.
+            - Liquidity vs Assets: Bar Chart (Chart.js) -> Goal: Contrast total wealth vs usable cash.
+            - Premium Breakdown: Doughnut Chart (Chart.js) -> Goal: Show the high proportion of unpaid premiums driving fake growth.
+         Phase 3 (Action): Interactive Toggle (JS/HTML) -> Goal: Let user simulate applying a prudential penalty.
+         NO SVG/Mermaid used.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #0f172a; /* slate-900 */
+        }
+
+        /* STRICT CHART CONTAINER STYLING */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        /* Custom UI Elements */
+        .stat-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Loader */
+        .loader {
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">Plateforme de Formation SBR</h1>
+                <p class="text-blue-200 text-sm">Cas Pratique : Émeraude IARD (Exercice N-1)</p>
+            </div>
+            <div class="hidden sm:block">
+                <span class="bg-blue-800 text-blue-100 text-xs px-3 py-1 rounded-full border border-blue-700">Mode Simulation</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 mt-8 space-y-12">
+
+        <!-- Introduction -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8">
+            <h2 class="text-xl font-semibold mb-4 text-blue-900 border-b pb-2">Objectif de l'Atelier</h2>
+            <p class="text-slate-700 leading-relaxed">
+                Cet environnement interactif vise à démontrer le changement de paradigme induit par le modèle de <strong>Supervision Basée sur les Risques (SBR)</strong>. Vous allez comparer l'analyse de conformité traditionnelle (statique) avec le diagnostic généré par le nouveau moteur SBR (dynamique), et finalement exercer votre <strong>Jugement Prudentiel</strong> face à une situation complexe.
+            </p>
+        </section>
+
+        <!-- PHASE 1 : Traditional View -->
+        <section id="phase1-section" class="space-y-6">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold">1</div>
+                <h2 class="text-2xl font-bold text-slate-800">L'Analyse Classique (Contrôle sur pièces)</h2>
+            </div>
+            <p class="text-slate-600">
+                Vous réceptionnez les états financiers (États C) de la compagnie de taille moyenne <strong>Émeraude IARD</strong>. Voici les indicateurs bruts issus de votre contrôle de conformité habituel. À première vue, quelle est votre conclusion sur la santé de cette entité ?
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Stat Card 1 -->
+                <div class="stat-card bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between h-full">
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Croissance (CA)</p>
+                    <p class="text-3xl font-bold text-emerald-600 mt-2">+15%</p>
+                    <p class="text-xs text-slate-400 mt-2">Par rapport à N-2. Forte dynamique commerciale.</p>
+                </div>
+                <!-- Stat Card 2 -->
+                <div class="stat-card bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between h-full">
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Marge Solvabilité (C1)</p>
+                    <p class="text-3xl font-bold text-emerald-600 mt-2">150%</p>
+                    <p class="text-xs text-slate-400 mt-2">Excédentaire par rapport à l'exigence minimale.</p>
+                </div>
+                <!-- Stat Card 3 -->
+                <div class="stat-card bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between h-full">
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Couverture Engagements (C4)</p>
+                    <p class="text-3xl font-bold text-emerald-600 mt-2">105%</p>
+                    <p class="text-xs text-slate-400 mt-2">Actifs admis couvrent totalement les provisions.</p>
+                </div>
+                <!-- Stat Card 4 -->
+                <div class="stat-card bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between h-full">
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Résultat Net</p>
+                    <p class="text-3xl font-bold text-emerald-600 mt-2">+500M</p>
+                    <p class="text-xs text-slate-400 mt-2">Bénéfice net en FCFA. Exercice très rentable.</p>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 flex flex-col sm:flex-row items-center justify-between">
+                <p class="text-blue-800 font-medium mb-4 sm:mb-0">Conclusion classique : L'entreprise semble très solide et respecte la réglementation.</p>
+                <button id="btn-run-sbr" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition duration-200">
+                    Lancer le Moteur SBR
+                </button>
+            </div>
+            
+            <div id="loading-state" class="hidden text-center py-8">
+                <div class="loader"></div>
+                <span class="text-blue-600 font-medium">Analyse Total Balance Sheet en cours...</span>
+            </div>
+        </section>
+
+        <!-- PHASE 2 : SBR Diagnostic -->
+        <section id="phase2-section" class="hidden space-y-8 border-t border-slate-200 pt-8 mt-8">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">2</div>
+                <h2 class="text-2xl font-bold text-slate-800">Le Diagnostic SBR (Les Rayons X)</h2>
+            </div>
+            <p class="text-slate-600">
+                Le modèle a croisé les données de l'actif, du passif et des fonds propres. Voici le véritable profil de risque économique de l'entreprise. <strong>La richesse apparente masque une illiquidité sévère.</strong>
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Main Score Card -->
+                <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-slate-200 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-amber-500"></div>
+                    <h3 class="text-lg font-semibold text-slate-700 mb-4">Note SBR Globale</h3>
+                    
+                    <div class="chart-container" style="height: 180px;">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <span class="text-5xl font-extrabold text-amber-500">48</span><span class="text-xl text-slate-400">/100</span>
+                    </div>
+                    <div class="mt-2 bg-amber-100 text-amber-800 px-4 py-1 rounded-full font-bold text-lg">
+                        CLASSE C (Fragile)
+                    </div>
+                    <p class="text-sm text-slate-500 mt-4">Malgré un C1 à 150%, le modèle déclasse l'entité en raison de vulnérabilités sous-jacentes majeures.</p>
+                </div>
+
+                <!-- Red Flags Grid -->
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Flag 1: Claims Speed -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex items-center mb-3">
+                            <span class="text-xl mr-2">&#9888;&#65039;</span>
+                            <h4 class="font-semibold text-slate-800">TECH-02 : Lenteur des Règlements</h4>
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4 h-10">La compagnie ne paie pas ses assurés. Moins d'un quart des sinistres déclarés sont réglés dans l'année.</p>
+                        
+                        <div class="mt-auto">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-bold text-rose-600">22% Réglés</span>
+                                <span class="text-slate-400">Cible min. 50%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-4 border border-slate-200">
+                                <div class="bg-rose-500 h-4 rounded-full" style="width: 22%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flag 2: Liquidity -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col">
+                        <div class="flex items-center mb-1">
+                            <span class="text-xl mr-2">&#9888;&#65039;</span>
+                            <h4 class="font-semibold text-slate-800">LIQ-01 : Risque d'Illiquidité</h4>
+                        </div>
+                        <p class="text-xs text-slate-600 mb-2">Le ratio C4 (105%) est couvert par des actifs immobilisés (bâtiments) et des créances, pas par du cash.</p>
+                        <div class="chart-container flex-grow" style="height: 120px;">
+                            <canvas id="liquidityChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Flag 3: Anomaly -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 md:col-span-2 flex flex-col sm:flex-row items-center">
+                        <div class="sm:w-1/2 pr-0 sm:pr-4 mb-4 sm:mb-0">
+                            <div class="flex items-center mb-2">
+                                <span class="text-xl mr-2">&#128269;</span>
+                                <h4 class="font-semibold text-slate-800">Score d'Anomalie (Fraude)</h4>
+                            </div>
+                            <div class="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm font-bold mb-2">Alerte Orange : 2/3</div>
+                            <p class="text-sm text-slate-600">Le modèle détecte une croissance factice. Les 15% de hausse du CA sont constitués majoritairement de <strong>primes non encaissées</strong> (arriérés > 6 mois).</p>
+                        </div>
+                        <div class="sm:w-1/2 w-full chart-container" style="height: 140px;">
+                            <canvas id="premiumChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="text-center pt-4">
+                <button id="btn-proceed-phase3" class="bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 px-6 rounded shadow transition duration-200">
+                    Aller sur le terrain (Mission de vérification) &darr;
+                </button>
+            </div>
+        </section>
+
+        <!-- PHASE 3 : The Twist & Human Judgment -->
+        <section id="phase3-section" class="hidden space-y-6 border-t border-slate-200 pt-8 mt-8">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold">3</div>
+                <h2 class="text-2xl font-bold text-slate-800">Atelier : Le Jugement Prudentiel</h2>
+            </div>
+            
+            <div class="bg-rose-50 border-l-4 border-rose-500 p-6 rounded-r-lg shadow-sm">
+                <h3 class="text-lg font-bold text-rose-800 mb-2">Découverte sur Pièce (Contrôle sur place)</h3>
+                <p class="text-rose-900 mb-4">
+                    Suite à la note "Classe C" du modèle, vous vous rendez chez Émeraude IARD. En examinant les dossiers, vous découvrez que le principal courtier de la compagnie, qui concentre <strong>40% des fameux arriérés de primes</strong>, a secrètement fait faillite le mois dernier. Ces primes ne seront jamais recouvrées. Le modèle ne pouvait pas le savoir car l'événement est post-clôture.
+                </p>
+                <div class="bg-white p-4 rounded border border-rose-200">
+                    <p class="font-medium text-slate-800 mb-3">En tant que Chef de mission, que décidez-vous ?</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button id="btn-keep-c" class="flex-1 bg-white border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-medium py-3 px-4 rounded transition">
+                            Faire confiance au modèle<br><span class="text-xs font-normal">Maintenir en Classe C</span>
+                        </button>
+                        <button id="btn-downgrade-d" class="flex-1 bg-white border-2 border-rose-500 text-rose-700 hover:bg-rose-50 font-bold py-3 px-4 rounded shadow-sm transition">
+                            Appliquer le Malus Prudentiel<br><span class="text-xs font-normal">Déclasser en Classe D (Critique)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Conclusion (Hidden initially) -->
+            <div id="final-conclusion" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-6 mt-6 fade-in">
+                <h3 class="text-xl font-bold text-emerald-800 mb-3">&#10003; Décision Optimale Validée</h3>
+                <p class="text-slate-700 mb-4">
+                    Vous avez utilisé votre pouvoir discrétionnaire pour appliquer un ajustement de <strong>-1 Classe</strong>. L'entreprise est placée en surveillance critique, ses actifs sont gelés, un plan de redressement est exigé. Vous venez potentiellement d'éviter une cessation de paiement dommageable pour les assurés.
+                </p>
+                
+                <div class="bg-white p-5 rounded-lg border border-emerald-100 mt-4">
+                    <h4 class="font-bold text-slate-800 mb-2">À retenir de cette séance :</h4>
+                    <ul class="space-y-2 text-sm text-slate-600">
+                        <li class="flex items-start"><span class="text-emerald-500 mr-2">&#10004;</span> <strong>Le SBR vérifie la réalité économique :</strong> Les ratios C1 et C4 classiques vérifiaient la légalité, le SBR a révélé l'illiquidité.</li>
+                        <li class="flex items-start"><span class="text-emerald-500 mr-2">&#10004;</span> <strong>Le modèle est un "chien truffier" :</strong> Il ne vous remplace pas, il a pointé vers la zone anormale (les encaissements) pour orienter votre contrôle.</li>
+                        <li class="flex items-start"><span class="text-emerald-500 mr-2">&#10004;</span> <strong>Vous restez le maître à bord :</strong> C'est l'intelligence humaine, combinée à l'alerte du modèle, qui permet de prendre la bonne décision prudentielle.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Wrong Choice Message -->
+            <div id="wrong-choice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 mt-6 fade-in text-amber-800">
+                <strong>Attention :</strong> Le modèle n'est qu'un outil d'aide à la décision basé sur des données arrêtées à une date fixe. Ignorer une information de terrain majeure (la faillite du courtier) risque de mettre en péril les assurés. Le Jugement Prudentiel est conçu précisément pour corriger ces angles morts. <em>Essayez de déclasser la compagnie.</em>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            phase: 1,
+            chartsRendered: false
+        };
+
+        // --- DOM Elements ---
+        const btnRunSbr = document.getElementById('btn-run-sbr');
+        const loadingState = document.getElementById('loading-state');
+        const phase2Section = document.getElementById('phase2-section');
+        const btnProceedPhase3 = document.getElementById('btn-proceed-phase3');
+        const phase3Section = document.getElementById('phase3-section');
+        
+        const btnKeepC = document.getElementById('btn-keep-c');
+        const btnDowngradeD = document.getElementById('btn-downgrade-d');
+        const finalConclusion = document.getElementById('final-conclusion');
+        const wrongChoice = document.getElementById('wrong-choice');
+
+        // --- Chart Instances to manage destruction if needed ---
+        let scoreChart, liqChart, premChart;
+
+        // --- Core Interactions ---
+
+        // Transition 1 -> 2
+        btnRunSbr.addEventListener('click', () => {
+            btnRunSbr.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            
+            // Simulate processing time
+            setTimeout(() => {
+                loadingState.classList.add('hidden');
+                phase2Section.classList.remove('hidden');
+                phase2Section.classList.add('fade-in');
+                
+                // Scroll to phase 2
+                phase2Section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                if (!state.chartsRendered) {
+                    renderSBRCharts();
+                    state.chartsRendered = true;
+                }
+            }, 1500);
+        });
+
+        // Transition 2 -> 3
+        btnProceedPhase3.addEventListener('click', () => {
+            btnProceedPhase3.classList.add('hidden');
+            phase3Section.classList.remove('hidden');
+            phase3Section.classList.add('fade-in');
+            phase3Section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        // Action: Keep Class C
+        btnKeepC.addEventListener('click', () => {
+            wrongChoice.classList.remove('hidden');
+            finalConclusion.classList.add('hidden');
+            
+            // Reset styles
+            btnKeepC.classList.replace('border-slate-300', 'border-amber-500');
+            btnDowngradeD.classList.replace('bg-rose-50', 'bg-white');
+        });
+
+        // Action: Downgrade to Class D
+        btnDowngradeD.addEventListener('click', () => {
+            wrongChoice.classList.add('hidden');
+            finalConclusion.classList.remove('hidden');
+            
+            // UI Feedback
+            btnDowngradeD.classList.replace('bg-white', 'bg-rose-100');
+            btnDowngradeD.classList.replace('border-rose-500', 'border-rose-600');
+            btnKeepC.classList.replace('border-amber-500', 'border-slate-300');
+            
+            // Scroll to conclusion
+            setTimeout(() => {
+                finalConclusion.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        });
+
+
+        // --- Chart Rendering Logic (Chart.js) ---
+        function renderSBRCharts() {
+            // Common Chart Options
+            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            Chart.defaults.color = '#64748b';
+
+            // 1. SBR Score Chart (Half Doughnut)
+            const ctxScore = document.getElementById('scoreChart').getContext('2d');
+            scoreChart = new Chart(ctxScore, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Score', 'Reste'],
+                    datasets: [{
+                        data: [48, 52],
+                        backgroundColor: ['#f59e0b', '#f1f5f9'], // Amber for 48, subtle grey for rest
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: 270
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+
+            // 2. Liquidity Comparison Chart (Bar)
+            const ctxLiq = document.getElementById('liquidityChart').getContext('2d');
+            liqChart = new Chart(ctxLiq, {
+                type: 'bar',
+                data: {
+                    labels: ['Actifs (C4)', 'Dont Liquidités'],
+                    datasets: [{
+                        label: 'Couverture',
+                        data: [105, 35],
+                        backgroundColor: ['#94a3b8', '#3b82f6'], // Slate for total, Blue for liquid
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Horizontal bars
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.raw + '% des provisions';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { display: false, max: 110 },
+                        y: { 
+                            grid: { display: false },
+                            ticks: { font: { weight: 'bold' }, color: '#334155' }
+                        }
+                    }
+                }
+            });
+
+            // 3. Premium Breakdown (Doughnut)
+            const ctxPrem = document.getElementById('premiumChart').getContext('2d');
+            premChart = new Chart(ctxPrem, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Primes Encaissées', 'Arriérés > 6 mois (Fictif)'],
+                    datasets: [{
+                        data: [25, 75],
+                        backgroundColor: ['#10b981', '#ef4444'], // Emerald vs Red
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { 
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                font: { size: 10 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.raw + '% de la croissance';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
