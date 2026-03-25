@@ -3,21 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulation SBR : Cas Pratique Émeraude IARD</title>
+    <title>Simulation SBR Intégrée : Micro (Phases 1 & 2) & Macro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Chosen Palette: Slate (Background), Blue (Primary/Trust), Emerald (Illusion of Health), Amber (SBR Warning), Rose (Prudential Danger) -->
-    <!-- Application Structure Plan: A linear, narrative-driven dashboard. It starts with the 'Traditional View' to establish a false sense of security. A user action triggers the 'SBR Diagnostic' phase, revealing hidden risks via charts, mimicking the supervisor's workflow. A final action introduces a real-world twist, requiring 'Prudential Judgment' to alter the final state. This guided structure forces the user to experience the paradigm shift conceptually. -->
+    <!-- Chosen Palette: Slate (Background), Blue (Primary/Trust), Emerald (Illusion of Health), Amber (SBR Warning), Rose (Prudential/Systemic Danger), Indigo (Macro dimension) -->
+    <!-- Application Structure Plan: Narrative scroll-telling dashboard. 
+         1. Classic View (False security). 
+         2. SBR Phase 1 (Total Balance Sheet with existing data -> Reveals liquidity/tech issues). 
+         3. SBR Phase 2 (3-Layer formula + Anomaly detection -> Reveals governance/fraud issues). 
+         4. Macro View (Systemic Risk -> Reveals contagion risk). 
+         5. Prudential Judgment (The micro-macro loop in action). 
+         This sequential structure ensures the user understands the distinct value added by each phase of the CIMA reform. -->
     <!-- Visualization & Content Choices: 
-         Phase 1 (Traditional): Stat cards (HTML/CSS) -> Goal: Show seemingly healthy numbers quickly.
-         Phase 2 (SBR Score): Half-Doughnut (Chart.js) -> Goal: Visualize the overall risk score clearly.
-         Phase 2 (Red Flags): 
-            - Claims Speed: Progress Bar (HTML/CSS) -> Goal: Visually represent the sluggishness of payouts.
-            - Liquidity vs Assets: Bar Chart (Chart.js) -> Goal: Contrast total wealth vs usable cash.
-            - Premium Breakdown: Doughnut Chart (Chart.js) -> Goal: Show the high proportion of unpaid premiums driving fake growth.
-         Phase 3 (Action): Interactive Toggle (JS/HTML) -> Goal: Let user simulate applying a prudential penalty.
-         NO SVG/Mermaid used.
+         - Phase 1: Bar chart (Liquidity comparison) -> Shows assets vs actual cash.
+         - Phase 2: Doughnut chart (Premium reality) & HTML Formula -> Explains the 3-layer scoring and anomaly detection.
+         - Macro: Bubble chart (Systemic map) -> X: Market Share, Y: Interconnection, Size: Assets. Instantly visualizes if the company is an AIDM (Systemically Important).
+         - Interactions: Buttons unlock next sections to force sequential learning. Final decision toggle for prudential judgment.
+         - NO SVG/Mermaid used. Unicode icons and Chart.js Canvas exclusively.
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
@@ -32,20 +35,28 @@
         .chart-container {
             position: relative;
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             margin-left: auto;
             margin-right: auto;
             height: 250px;
-            max-height: 300px;
+            max-height: 350px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
+        .chart-container-large {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 450px;
+        }
+
         @media (min-width: 768px) {
-            .chart-container {
-                height: 300px;
-            }
+            .chart-container { height: 300px; }
         }
 
         /* Custom UI Elements */
@@ -63,402 +74,416 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Loader */
-        .loader {
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #2563eb;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 10px;
+        .timeline-line {
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #cbd5e1;
+            z-index: 0;
+        }
+        @media (min-width: 640px) {
+            .timeline-line { left: 50%; transform: translateX(-50%); }
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* Mathematical Formula styling */
+        .math-block {
+            font-family: 'Courier New', Courier, monospace;
+            background: #f1f5f9;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e1;
+            display: inline-block;
+            font-weight: bold;
+            color: #1e293b;
         }
     </style>
 </head>
-<body class="antialiased pb-20">
+<body class="antialiased pb-24">
 
     <!-- Header -->
-    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-50 border-b-4 border-blue-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-bold">Plateforme de Formation SBR</h1>
-                <p class="text-blue-200 text-sm">Cas Pratique : Émeraude IARD (Exercice N-1)</p>
+                <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Plateforme SBR Intégrée</h1>
+                <p class="text-slate-400 text-xs sm:text-sm">Cas d'étude complet : Émeraude IARD</p>
             </div>
-            <div class="hidden sm:block">
-                <span class="bg-blue-800 text-blue-100 text-xs px-3 py-1 rounded-full border border-blue-700">Mode Simulation</span>
+            <div class="flex space-x-2">
+                <span class="bg-blue-900 text-blue-200 text-xs px-3 py-1 rounded-full border border-blue-700 hidden sm:inline-block">Module Micro</span>
+                <span class="bg-indigo-900 text-indigo-200 text-xs px-3 py-1 rounded-full border border-indigo-700 hidden sm:inline-block">Module Macro</span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 mt-8 space-y-12">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-8 space-y-16">
 
-        <!-- Introduction -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8">
-            <h2 class="text-xl font-semibold mb-4 text-blue-900 border-b pb-2">Objectif de l'Atelier</h2>
-            <p class="text-slate-700 leading-relaxed">
-                Cet environnement interactif vise à démontrer le changement de paradigme induit par le modèle de <strong>Supervision Basée sur les Risques (SBR)</strong>. Vous allez comparer l'analyse de conformité traditionnelle (statique) avec le diagnostic généré par le nouveau moteur SBR (dynamique), et finalement exercer votre <strong>Jugement Prudentiel</strong> face à une situation complexe.
+        <!-- Intro -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">Parcours d'Évaluation Prudentielle</h2>
+            <p class="text-slate-600 leading-relaxed text-lg">
+                Suivez le parcours d'analyse de la compagnie <strong>Émeraude IARD</strong> à travers les différentes strates de la nouvelle réforme CIMA. Vous commencerez par le contrôle classique, puis appliquerez successivement la <strong>Phase 1 SBR</strong>, la <strong>Phase 2 SBR</strong>, et enfin la <strong>Vision Macro/Systémique</strong> pour forger votre décision finale.
             </p>
         </section>
 
-        <!-- PHASE 1 : Traditional View -->
-        <section id="phase1-section" class="space-y-6">
-            <div class="flex items-center space-x-3 mb-2">
-                <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold">1</div>
-                <h2 class="text-2xl font-bold text-slate-800">L'Analyse Classique (Contrôle sur pièces)</h2>
-            </div>
-            <p class="text-slate-600">
-                Vous réceptionnez les états financiers (États C) de la compagnie de taille moyenne <strong>Émeraude IARD</strong>. Voici les indicateurs bruts issus de votre contrôle de conformité habituel. À première vue, quelle est votre conclusion sur la santé de cette entité ?
-            </p>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Stat Card 1 -->
-                <div class="stat-card bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between h-full">
-                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Croissance (CA)</p>
-                    <p class="text-3xl font-bold text-emerald-600 mt-2">+15%</p>
-                    <p class="text-xs text-slate-400 mt-2">Par rapport à N-2. Forte dynamique commerciale.</p>
-                </div>
-                <!-- Stat Card 2 -->
-                <div class="stat-card bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between h-full">
-                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Marge Solvabilité (C1)</p>
-                    <p class="text-3xl font-bold text-emerald-600 mt-2">150%</p>
-                    <p class="text-xs text-slate-400 mt-2">Excédentaire par rapport à l'exigence minimale.</p>
-                </div>
-                <!-- Stat Card 3 -->
-                <div class="stat-card bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between h-full">
-                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Couverture Engagements (C4)</p>
-                    <p class="text-3xl font-bold text-emerald-600 mt-2">105%</p>
-                    <p class="text-xs text-slate-400 mt-2">Actifs admis couvrent totalement les provisions.</p>
-                </div>
-                <!-- Stat Card 4 -->
-                <div class="stat-card bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between h-full">
-                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Résultat Net</p>
-                    <p class="text-3xl font-bold text-emerald-600 mt-2">+500M</p>
-                    <p class="text-xs text-slate-400 mt-2">Bénéfice net en FCFA. Exercice très rentable.</p>
+        <!-- STEP 1: CLASSIC -->
+        <section id="step1" class="space-y-6 relative">
+            <div class="flex items-center space-x-4 mb-6">
+                <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xl shadow-inner">1</div>
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Le Contrôle Classique (Existant)</h2>
+                    <p class="text-sm text-slate-500">Analyse statique basée sur les ratios réglementaires de conformité.</p>
                 </div>
             </div>
 
-            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 flex flex-col sm:flex-row items-center justify-between">
-                <p class="text-blue-800 font-medium mb-4 sm:mb-0">Conclusion classique : L'entreprise semble très solide et respecte la réglementation.</p>
-                <button id="btn-run-sbr" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition duration-200">
-                    Lancer le Moteur SBR
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="stat-card bg-white p-5 rounded-xl border-t-4 border-emerald-500 shadow-sm text-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Croissance CA</p>
+                    <p class="text-4xl font-black text-emerald-600">+15%</p>
+                </div>
+                <div class="stat-card bg-white p-5 rounded-xl border-t-4 border-emerald-500 shadow-sm text-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Marge Solvabilité (C1)</p>
+                    <p class="text-4xl font-black text-emerald-600">150%</p>
+                </div>
+                <div class="stat-card bg-white p-5 rounded-xl border-t-4 border-emerald-500 shadow-sm text-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Couverture (C4)</p>
+                    <p class="text-4xl font-black text-emerald-600">105%</p>
+                </div>
+                <div class="stat-card bg-white p-5 rounded-xl border-t-4 border-emerald-500 shadow-sm text-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Résultat Net</p>
+                    <p class="text-4xl font-black text-emerald-600">+500M</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-100 rounded-lg p-5 flex flex-col sm:flex-row justify-between items-center border border-slate-200">
+                <p class="text-slate-700 font-medium mb-4 sm:mb-0">Conclusion apparente : Compagnie très saine.</p>
+                <button id="btn-run-phase1" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-200 w-full sm:w-auto">
+                    Déployer SBR : Phase 1 &#9654;
                 </button>
             </div>
-            
-            <div id="loading-state" class="hidden text-center py-8">
-                <div class="loader"></div>
-                <span class="text-blue-600 font-medium">Analyse Total Balance Sheet en cours...</span>
+        </section>
+
+        <!-- STEP 2: SBR PHASE 1 -->
+        <section id="step2" class="hidden space-y-6 pt-8 border-t-2 border-slate-100">
+            <div class="flex items-center space-x-4 mb-6">
+                <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md">2</div>
+                <div>
+                    <h2 class="text-2xl font-bold text-blue-900">SBR Phase 1 : Total Balance Sheet</h2>
+                    <p class="text-sm text-slate-500">Utilisation stricte des données existantes (C1, C4, C11). Croisement Actif/Passif.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Score Card Phase 1 -->
+                <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-blue-100 p-6 text-center flex flex-col justify-center">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase mb-2">Note SBR Préliminaire</h3>
+                    <div class="text-6xl font-black text-blue-500 mb-2">65<span class="text-2xl text-slate-300">/100</span></div>
+                    <div class="inline-block bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-bold text-lg mb-4">CLASSE B (Moyen)</div>
+                    <p class="text-sm text-slate-600">La note baisse. Le modèle a détecté des frictions de trésorerie malgré un C4 positif.</p>
+                </div>
+
+                <!-- Insights Phase 1 -->
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center"><span class="text-amber-500 mr-2">&#9888;&#65039;</span> LIQ-01 : Illiquidité de l'Actif</h4>
+                        <p class="text-xs text-slate-500 mb-4">Les 105% de couverture (C4) sont constitués à 70% d'immeubles non liquides.</p>
+                        <div class="chart-container" style="height: 140px;">
+                            <canvas id="chartLiqPhase1"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center"><span class="text-amber-500 mr-2">&#9888;&#65039;</span> TECH-02 : Lenteur Sinistres</h4>
+                        <p class="text-xs text-slate-500 mb-4">Conséquence du manque de cash : l'entreprise paie ses sinistres IARD très lentement.</p>
+                        <div class="w-full bg-slate-100 rounded-full h-6 border border-slate-200 relative overflow-hidden">
+                            <div class="bg-amber-400 h-6 rounded-full flex items-center justify-end pr-2 text-xs font-bold text-amber-900" style="width: 22%">22%</div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-400 mix-blend-difference">Cible réglementaire : 50%</div>
+                        </div>
+                        <p class="text-xs text-center text-slate-400 mt-2">Cadence de liquidation à 1 an</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <button id="btn-run-phase2" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-200 w-full sm:w-auto">
+                    Déployer SBR : Phase 2 (Cible) &#9654;
+                </button>
             </div>
         </section>
 
-        <!-- PHASE 2 : SBR Diagnostic -->
-        <section id="phase2-section" class="hidden space-y-8 border-t border-slate-200 pt-8 mt-8">
-            <div class="flex items-center space-x-3 mb-2">
-                <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">2</div>
-                <h2 class="text-2xl font-bold text-slate-800">Le Diagnostic SBR (Les Rayons X)</h2>
+        <!-- STEP 3: SBR PHASE 2 -->
+        <section id="step3" class="hidden space-y-6 pt-8 border-t-2 border-slate-100">
+            <div class="flex items-center space-x-4 mb-6">
+                <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-md">3</div>
+                <div>
+                    <h2 class="text-2xl font-bold text-indigo-900">SBR Phase 2 : Modèle Cible (3 Couches)</h2>
+                    <p class="text-sm text-slate-500">Intégration des données exclusives, gouvernance et lutte anti-fraude.</p>
+                </div>
             </div>
-            <p class="text-slate-600">
-                Le modèle a croisé les données de l'actif, du passif et des fonds propres. Voici le véritable profil de risque économique de l'entreprise. <strong>La richesse apparente masque une illiquidité sévère.</strong>
-            </p>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <!-- Main Score Card -->
-                <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-slate-200 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-2 bg-amber-500"></div>
-                    <h3 class="text-lg font-semibold text-slate-700 mb-4">Note SBR Globale</h3>
-                    
+            <!-- Architecture Formula -->
+            <div class="bg-slate-800 text-white p-6 rounded-xl shadow-md text-center mb-6">
+                <h3 class="text-sm font-medium text-slate-300 uppercase tracking-widest mb-4">Architecture de Calcul SBR</h3>
+                <div class="flex flex-col md:flex-row justify-center items-center gap-4 text-sm sm:text-base">
+                    <div class="bg-slate-700 p-3 rounded-lg border border-slate-600">
+                        <span class="text-blue-400 font-bold">70%</span> Noyau (Phase 1)
+                    </div>
+                    <div class="text-2xl font-bold text-slate-500">+</div>
+                    <div class="bg-slate-700 p-3 rounded-lg border border-slate-600">
+                        <span class="text-indigo-400 font-bold">30%</span> Données NRR (Concentration)
+                    </div>
+                    <div class="text-2xl font-bold text-slate-500">&plusmn;</div>
+                    <div class="bg-slate-700 p-3 rounded-lg border border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+                        Ajustements (Score Anomalie/Gouv)
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Anomaly Flag -->
+                <div class="bg-white p-6 rounded-xl shadow-md border border-rose-100 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-bold text-slate-800 text-lg flex items-center"><span class="text-rose-500 mr-2">&#128680;</span> Détection d'Anomalie</h4>
+                            <span class="bg-rose-100 text-rose-800 px-3 py-1 rounded font-bold text-xs">Alerte Maximum</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4">
+                            La Couche 2 a analysé la qualité des créances (NRR). Les 15% de croissance du CA vus en Phase 1 sont factices : ils sont constitués d'arriérés de primes impayées depuis plus de 6 mois, potentiellement irrécouvrables.
+                        </p>
+                    </div>
                     <div class="chart-container" style="height: 180px;">
-                        <canvas id="scoreChart"></canvas>
+                        <canvas id="chartPremiumPhase2"></canvas>
                     </div>
-                    
-                    <div class="mt-4">
-                        <span class="text-5xl font-extrabold text-amber-500">48</span><span class="text-xl text-slate-400">/100</span>
-                    </div>
-                    <div class="mt-2 bg-amber-100 text-amber-800 px-4 py-1 rounded-full font-bold text-lg">
-                        CLASSE C (Fragile)
-                    </div>
-                    <p class="text-sm text-slate-500 mt-4">Malgré un C1 à 150%, le modèle déclasse l'entité en raison de vulnérabilités sous-jacentes majeures.</p>
                 </div>
 
-                <!-- Red Flags Grid -->
-                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Final SBR Score -->
+                <div class="bg-rose-50 p-6 rounded-xl shadow-md border border-rose-200 text-center flex flex-col justify-center items-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-rose-500"></div>
+                    <h3 class="text-sm font-bold text-rose-800 uppercase mb-2">Note SBR Définitive (Micro)</h3>
                     
-                    <!-- Flag 1: Claims Speed -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                        <div class="flex items-center mb-3">
-                            <span class="text-xl mr-2">&#9888;&#65039;</span>
-                            <h4 class="font-semibold text-slate-800">TECH-02 : Lenteur des Règlements</h4>
-                        </div>
-                        <p class="text-sm text-slate-600 mb-4 h-10">La compagnie ne paie pas ses assurés. Moins d'un quart des sinistres déclarés sont réglés dans l'année.</p>
-                        
-                        <div class="mt-auto">
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="font-bold text-rose-600">22% Réglés</span>
-                                <span class="text-slate-400">Cible min. 50%</span>
-                            </div>
-                            <div class="w-full bg-slate-100 rounded-full h-4 border border-slate-200">
-                                <div class="bg-rose-500 h-4 rounded-full" style="width: 22%"></div>
-                            </div>
-                        </div>
+                    <div class="flex items-end justify-center mb-2">
+                        <div class="text-7xl font-black text-rose-600 leading-none">42</div>
+                        <div class="text-2xl font-bold text-rose-400 ml-1 mb-1">/100</div>
                     </div>
-
-                    <!-- Flag 2: Liquidity -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col">
-                        <div class="flex items-center mb-1">
-                            <span class="text-xl mr-2">&#9888;&#65039;</span>
-                            <h4 class="font-semibold text-slate-800">LIQ-01 : Risque d'Illiquidité</h4>
-                        </div>
-                        <p class="text-xs text-slate-600 mb-2">Le ratio C4 (105%) est couvert par des actifs immobilisés (bâtiments) et des créances, pas par du cash.</p>
-                        <div class="chart-container flex-grow" style="height: 120px;">
-                            <canvas id="liquidityChart"></canvas>
-                        </div>
+                    
+                    <div class="inline-block bg-rose-200 text-rose-900 px-5 py-2 rounded-full font-bold text-xl my-4 shadow-sm border border-rose-300">
+                        CLASSE C (Fragile)
                     </div>
-
-                    <!-- Flag 3: Anomaly -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 md:col-span-2 flex flex-col sm:flex-row items-center">
-                        <div class="sm:w-1/2 pr-0 sm:pr-4 mb-4 sm:mb-0">
-                            <div class="flex items-center mb-2">
-                                <span class="text-xl mr-2">&#128269;</span>
-                                <h4 class="font-semibold text-slate-800">Score d'Anomalie (Fraude)</h4>
-                            </div>
-                            <div class="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm font-bold mb-2">Alerte Orange : 2/3</div>
-                            <p class="text-sm text-slate-600">Le modèle détecte une croissance factice. Les 15% de hausse du CA sont constitués majoritairement de <strong>primes non encaissées</strong> (arriérés > 6 mois).</p>
-                        </div>
-                        <div class="sm:w-1/2 w-full chart-container" style="height: 140px;">
-                            <canvas id="premiumChart"></canvas>
-                        </div>
-                    </div>
-
+                    <p class="text-sm text-rose-700 font-medium">L'activation du malus "Score d'Anomalie" a effondré la note globale.</p>
                 </div>
             </div>
 
             <div class="text-center pt-4">
-                <button id="btn-proceed-phase3" class="bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 px-6 rounded shadow transition duration-200">
-                    Aller sur le terrain (Mission de vérification) &darr;
+                <button id="btn-run-macro" class="bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-200 w-full sm:w-auto flex items-center justify-center mx-auto text-lg">
+                    <span>Ouvrir l'Analyse Macro / Systémique</span> <span class="ml-2 text-xl">&#127760;</span>
                 </button>
             </div>
         </section>
 
-        <!-- PHASE 3 : The Twist & Human Judgment -->
-        <section id="phase3-section" class="hidden space-y-6 border-t border-slate-200 pt-8 mt-8">
-            <div class="flex items-center space-x-3 mb-2">
-                <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold">3</div>
-                <h2 class="text-2xl font-bold text-slate-800">Atelier : Le Jugement Prudentiel</h2>
+        <!-- STEP 4: MACRO & SYSTEMIC -->
+        <section id="step4" class="hidden space-y-6 pt-8 border-t-4 border-purple-200 bg-purple-50/30 p-6 rounded-2xl">
+            <div class="flex items-center space-x-4 mb-2">
+                <div class="w-10 h-10 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-xl shadow-md">&#127760;</div>
+                <div>
+                    <h2 class="text-2xl font-bold text-purple-900">Le Modèle Systémique (ESR-CIMA)</h2>
+                    <p class="text-sm text-purple-700">Boucle Micro &harr; Macro. Analyse du risque de contagion sur le marché.</p>
+                </div>
             </div>
-            
-            <div class="bg-rose-50 border-l-4 border-rose-500 p-6 rounded-r-lg shadow-sm">
-                <h3 class="text-lg font-bold text-rose-800 mb-2">Découverte sur Pièce (Contrôle sur place)</h3>
-                <p class="text-rose-900 mb-4">
-                    Suite à la note "Classe C" du modèle, vous vous rendez chez Émeraude IARD. En examinant les dossiers, vous découvrez que le principal courtier de la compagnie, qui concentre <strong>40% des fameux arriérés de primes</strong>, a secrètement fait faillite le mois dernier. Ces primes ne seront jamais recouvrées. Le modèle ne pouvait pas le savoir car l'événement est post-clôture.
-                </p>
-                <div class="bg-white p-4 rounded border border-rose-200">
-                    <p class="font-medium text-slate-800 mb-3">En tant que Chef de mission, que décidez-vous ?</p>
-                    
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <button id="btn-keep-c" class="flex-1 bg-white border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-medium py-3 px-4 rounded transition">
-                            Faire confiance au modèle<br><span class="text-xs font-normal">Maintenir en Classe C</span>
-                        </button>
-                        <button id="btn-downgrade-d" class="flex-1 bg-white border-2 border-rose-500 text-rose-700 hover:bg-rose-50 font-bold py-3 px-4 rounded shadow-sm transition">
-                            Appliquer le Malus Prudentiel<br><span class="text-xs font-normal">Déclasser en Classe D (Critique)</span>
-                        </button>
+
+            <p class="text-slate-700 mb-4">
+                La Classe C d'Émeraude IARD est préoccupante. Mais cet acteur est-il un <strong>AIDM (Assureur d'Importance Domestique Majeure)</strong> ? Une faillite impacterait-elle l'économie réelle ? Regardons la cartographie systémique du marché.
+            </p>
+
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-purple-200">
+                <h4 class="font-bold text-slate-800 mb-4 text-center">Cartographie du Risque Systémique (Marché National)</h4>
+                <div class="chart-container-large relative">
+                    <canvas id="chartMacroBubble"></canvas>
+                </div>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                        <strong>Axe Horizontal (X) :</strong> Part de Marché (Taille relative).
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                        <strong>Axe Vertical (Y) :</strong> Indice d'Interconnexion (Liens avec les banques et réassureurs).
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                        <strong>Taille de la bulle :</strong> Volume total du Bilan (Exposition).
                     </div>
                 </div>
             </div>
 
-            <!-- Final Conclusion (Hidden initially) -->
-            <div id="final-conclusion" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-6 mt-6 fade-in">
-                <h3 class="text-xl font-bold text-emerald-800 mb-3">&#10003; Décision Optimale Validée</h3>
-                <p class="text-slate-700 mb-4">
-                    Vous avez utilisé votre pouvoir discrétionnaire pour appliquer un ajustement de <strong>-1 Classe</strong>. L'entreprise est placée en surveillance critique, ses actifs sont gelés, un plan de redressement est exigé. Vous venez potentiellement d'éviter une cessation de paiement dommageable pour les assurés.
-                </p>
-                
-                <div class="bg-white p-5 rounded-lg border border-emerald-100 mt-4">
-                    <h4 class="font-bold text-slate-800 mb-2">À retenir de cette séance :</h4>
-                    <ul class="space-y-2 text-sm text-slate-600">
-                        <li class="flex items-start"><span class="text-emerald-500 mr-2">&#10004;</span> <strong>Le SBR vérifie la réalité économique :</strong> Les ratios C1 et C4 classiques vérifiaient la légalité, le SBR a révélé l'illiquidité.</li>
-                        <li class="flex items-start"><span class="text-emerald-500 mr-2">&#10004;</span> <strong>Le modèle est un "chien truffier" :</strong> Il ne vous remplace pas, il a pointé vers la zone anormale (les encaissements) pour orienter votre contrôle.</li>
-                        <li class="flex items-start"><span class="text-emerald-500 mr-2">&#10004;</span> <strong>Vous restez le maître à bord :</strong> C'est l'intelligence humaine, combinée à l'alerte du modèle, qui permet de prendre la bonne décision prudentielle.</li>
-                    </ul>
+            <div class="bg-rose-100 border-l-4 border-rose-600 p-5 rounded-r-lg flex flex-col md:flex-row items-center justify-between shadow-sm">
+                <div class="mb-4 md:mb-0">
+                    <h4 class="text-rose-900 font-bold text-lg mb-1 flex items-center"><span class="mr-2">&#9889;</span> Alerte de Contagion Majeure</h4>
+                    <p class="text-rose-800 text-sm">
+                        Émeraude n'est pas un petit acteur isolé. Ses dépôts bancaires sont concentrés dans la banque B-Nationale. Sa chute (Classe C actuelle) provoquerait un <em>Hard Trigger</em> systémique.
+                    </p>
                 </div>
             </div>
 
-            <!-- Wrong Choice Message -->
-            <div id="wrong-choice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 mt-6 fade-in text-amber-800">
-                <strong>Attention :</strong> Le modèle n'est qu'un outil d'aide à la décision basé sur des données arrêtées à une date fixe. Ignorer une information de terrain majeure (la faillite du courtier) risque de mettre en péril les assurés. Le Jugement Prudentiel est conçu précisément pour corriger ces angles morts. <em>Essayez de déclasser la compagnie.</em>
+            <div class="text-center pt-6">
+                <button id="btn-run-judgment" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 px-10 rounded-xl shadow-xl transition duration-300 transform hover:scale-105 text-lg">
+                    &#9878;&#65039; Exercer le Jugement Prudentiel
+                </button>
             </div>
+        </section>
 
+        <!-- STEP 5: PRUDENTIAL JUDGMENT -->
+        <section id="step5" class="hidden space-y-6 pt-8 border-t-2 border-slate-200">
+            <h2 class="text-3xl font-black text-slate-800 text-center mb-8">La Décision du Contrôleur</h2>
+            
+            <div class="bg-white border-2 border-slate-300 p-8 rounded-2xl shadow-lg max-w-3xl mx-auto">
+                <p class="text-lg text-slate-700 mb-6 text-center">
+                    Synthèse : Le modèle SBR (Micro) note Émeraude en <strong>Classe C</strong>. Le modèle Systémique (Macro) indique qu'Émeraude est un acteur hautement interconnecté. En tant que superviseur, quel est votre choix final ?
+                </p>
+
+                <div class="flex flex-col sm:flex-row gap-6 justify-center">
+                    <button id="btn-choice-c" class="flex-1 bg-slate-50 border border-slate-300 hover:border-slate-500 text-slate-700 font-medium py-4 px-6 rounded-xl transition-all">
+                        <div class="text-xl font-bold mb-1">Valider le Modèle</div>
+                        <div class="text-sm">Maintenir la Classe C</div>
+                    </button>
+                    <button id="btn-choice-d" class="flex-1 bg-rose-50 border-2 border-rose-500 hover:bg-rose-100 text-rose-800 font-bold py-4 px-6 rounded-xl shadow-[0_4px_14px_0_rgba(244,63,94,0.3)] transition-all transform hover:-translate-y-1">
+                        <div class="text-xl mb-1">Ajustement Macro (-1)</div>
+                        <div class="text-sm font-normal">Déclasser d'urgence en Classe D</div>
+                    </button>
+                </div>
+
+                <!-- Feedbacks -->
+                <div id="feedback-c" class="hidden mt-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded text-amber-800 text-sm">
+                    <strong>Risque sous-estimé :</strong> La Classe C implique une surveillance trimestrielle. Vu son poids systémique, attendre 3 mois pourrait déclencher une crise de liquidité affectant les banques partenaires. L'ICP 24 (IAIS) recommande une action plus stricte.
+                </div>
+
+                <div id="feedback-d" class="hidden mt-6 bg-emerald-50 border border-emerald-200 p-6 rounded-xl text-emerald-900 fade-in">
+                    <h4 class="text-lg font-bold mb-2 flex items-center"><span class="mr-2 text-2xl">&#127942;</span> Décision Parfaite !</h4>
+                    <p class="mb-3">
+                        C'est l'essence même du <strong>Modèle Intégré SBR &times; Macro</strong>. Vous avez utilisé l'intelligence de la plateforme (données de fraude) couplée à votre vision systémique (interconnexion) pour activer le <em>Jugement Prudentiel</em>.
+                    </p>
+                    <p class="text-sm text-emerald-700">
+                        <strong>Conséquences :</strong> Émeraude passe en Classe D (Critique). Le plan de sauvegarde est déclenché, les flux intra-groupe sont gelés immédiatement. La contagion financière est évitée.
+                    </p>
+                </div>
+            </div>
         </section>
 
     </main>
 
     <script>
-        // --- State Management ---
-        const state = {
-            phase: 1,
-            chartsRendered: false
-        };
-
-        // --- DOM Elements ---
-        const btnRunSbr = document.getElementById('btn-run-sbr');
-        const loadingState = document.getElementById('loading-state');
-        const phase2Section = document.getElementById('phase2-section');
-        const btnProceedPhase3 = document.getElementById('btn-proceed-phase3');
-        const phase3Section = document.getElementById('phase3-section');
+        // --- Navigation Logic ---
+        const btnPhase1 = document.getElementById('btn-run-phase1');
+        const secPhase2 = document.getElementById('step2');
         
-        const btnKeepC = document.getElementById('btn-keep-c');
-        const btnDowngradeD = document.getElementById('btn-downgrade-d');
-        const finalConclusion = document.getElementById('final-conclusion');
-        const wrongChoice = document.getElementById('wrong-choice');
+        const btnPhase2 = document.getElementById('btn-run-phase2');
+        const secPhase3 = document.getElementById('step3');
 
-        // --- Chart Instances to manage destruction if needed ---
-        let scoreChart, liqChart, premChart;
+        const btnMacro = document.getElementById('btn-run-macro');
+        const secMacro = document.getElementById('step4');
 
-        // --- Core Interactions ---
+        const btnJudgment = document.getElementById('btn-run-judgment');
+        const secJudgment = document.getElementById('step5');
 
-        // Transition 1 -> 2
-        btnRunSbr.addEventListener('click', () => {
-            btnRunSbr.classList.add('hidden');
-            loadingState.classList.remove('hidden');
-            
-            // Simulate processing time
+        const btnChoiceC = document.getElementById('btn-choice-c');
+        const btnChoiceD = document.getElementById('btn-choice-d');
+        const feedbackC = document.getElementById('feedback-c');
+        const feedbackD = document.getElementById('feedback-d');
+
+        // Chart instances
+        let cLiq, cPrem, cMacro;
+
+        // Global Chart Defaults
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+
+        btnPhase1.addEventListener('click', () => {
+            btnPhase1.classList.add('opacity-50', 'cursor-not-allowed');
+            btnPhase1.innerText = "Phase 1 Active";
+            secPhase2.classList.remove('hidden');
+            secPhase2.classList.add('fade-in');
+            secPhase2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if(!cLiq) renderPhase1Charts();
+        });
+
+        btnPhase2.addEventListener('click', () => {
+            btnPhase2.classList.add('opacity-50', 'cursor-not-allowed');
+            btnPhase2.innerText = "Phase 2 Active";
+            secPhase3.classList.remove('hidden');
+            secPhase3.classList.add('fade-in');
+            secPhase3.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if(!cPrem) renderPhase2Charts();
+        });
+
+        btnMacro.addEventListener('click', () => {
+            btnMacro.classList.add('opacity-50', 'cursor-not-allowed');
+            secMacro.classList.remove('hidden');
+            secMacro.classList.add('fade-in');
+            secMacro.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if(!cMacro) renderMacroChart();
+        });
+
+        btnJudgment.addEventListener('click', () => {
+            btnJudgment.classList.add('hidden');
+            secJudgment.classList.remove('hidden');
+            secJudgment.classList.add('fade-in');
+            secJudgment.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        btnChoiceC.addEventListener('click', () => {
+            feedbackC.classList.remove('hidden');
+            feedbackD.classList.add('hidden');
+            btnChoiceC.classList.replace('border-slate-300', 'border-amber-500');
+            btnChoiceD.classList.replace('bg-rose-100', 'bg-rose-50');
+        });
+
+        btnChoiceD.addEventListener('click', () => {
+            feedbackC.classList.add('hidden');
+            feedbackD.classList.remove('hidden');
+            btnChoiceD.classList.replace('bg-rose-50', 'bg-rose-100');
+            btnChoiceC.classList.replace('border-amber-500', 'border-slate-300');
             setTimeout(() => {
-                loadingState.classList.add('hidden');
-                phase2Section.classList.remove('hidden');
-                phase2Section.classList.add('fade-in');
-                
-                // Scroll to phase 2
-                phase2Section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-                if (!state.chartsRendered) {
-                    renderSBRCharts();
-                    state.chartsRendered = true;
-                }
-            }, 1500);
-        });
-
-        // Transition 2 -> 3
-        btnProceedPhase3.addEventListener('click', () => {
-            btnProceedPhase3.classList.add('hidden');
-            phase3Section.classList.remove('hidden');
-            phase3Section.classList.add('fade-in');
-            phase3Section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-
-        // Action: Keep Class C
-        btnKeepC.addEventListener('click', () => {
-            wrongChoice.classList.remove('hidden');
-            finalConclusion.classList.add('hidden');
-            
-            // Reset styles
-            btnKeepC.classList.replace('border-slate-300', 'border-amber-500');
-            btnDowngradeD.classList.replace('bg-rose-50', 'bg-white');
-        });
-
-        // Action: Downgrade to Class D
-        btnDowngradeD.addEventListener('click', () => {
-            wrongChoice.classList.add('hidden');
-            finalConclusion.classList.remove('hidden');
-            
-            // UI Feedback
-            btnDowngradeD.classList.replace('bg-white', 'bg-rose-100');
-            btnDowngradeD.classList.replace('border-rose-500', 'border-rose-600');
-            btnKeepC.classList.replace('border-amber-500', 'border-slate-300');
-            
-            // Scroll to conclusion
-            setTimeout(() => {
-                finalConclusion.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                feedbackD.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
         });
 
+        // --- Chart Renders ---
 
-        // --- Chart Rendering Logic (Chart.js) ---
-        function renderSBRCharts() {
-            // Common Chart Options
-            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-            Chart.defaults.color = '#64748b';
-
-            // 1. SBR Score Chart (Half Doughnut)
-            const ctxScore = document.getElementById('scoreChart').getContext('2d');
-            scoreChart = new Chart(ctxScore, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Score', 'Reste'],
-                    datasets: [{
-                        data: [48, 52],
-                        backgroundColor: ['#f59e0b', '#f1f5f9'], // Amber for 48, subtle grey for rest
-                        borderWidth: 0,
-                        circumference: 180,
-                        rotation: 270
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false }
-                    }
-                }
-            });
-
-            // 2. Liquidity Comparison Chart (Bar)
-            const ctxLiq = document.getElementById('liquidityChart').getContext('2d');
-            liqChart = new Chart(ctxLiq, {
+        function renderPhase1Charts() {
+            const ctx = document.getElementById('chartLiqPhase1').getContext('2d');
+            cLiq = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Actifs (C4)', 'Dont Liquidités'],
+                    labels: ['Total Actifs C4', 'Liquidités Réelles'],
                     datasets: [{
-                        label: 'Couverture',
-                        data: [105, 35],
-                        backgroundColor: ['#94a3b8', '#3b82f6'], // Slate for total, Blue for liquid
+                        data: [105, 30],
+                        backgroundColor: ['#94a3b8', '#3b82f6'],
                         borderRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    indexAxis: 'y', // Horizontal bars
+                    indexAxis: 'y',
                     plugins: {
                         legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.raw + '% des provisions';
-                                }
-                            }
-                        }
+                        tooltip: { callbacks: { label: c => c.raw + '%' } }
                     },
                     scales: {
-                        x: { display: false, max: 110 },
-                        y: { 
-                            grid: { display: false },
-                            ticks: { font: { weight: 'bold' }, color: '#334155' }
-                        }
+                        x: { max: 110, display: false },
+                        y: { border: {display: false}, grid: {display: false}, ticks: { font: {weight: 'bold'}, color: '#475569' } }
                     }
                 }
             });
+        }
 
-            // 3. Premium Breakdown (Doughnut)
-            const ctxPrem = document.getElementById('premiumChart').getContext('2d');
-            premChart = new Chart(ctxPrem, {
+        function renderPhase2Charts() {
+            const ctx = document.getElementById('chartPremiumPhase2').getContext('2d');
+            cPrem = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Primes Encaissées', 'Arriérés > 6 mois (Fictif)'],
+                    labels: ['Primes Réelles (Encaissées)', 'Primes Fictives (Arriérés > 6m)'],
                     datasets: [{
                         data: [25, 75],
-                        backgroundColor: ['#10b981', '#ef4444'], // Emerald vs Red
+                        backgroundColor: ['#10b981', '#f43f5e'],
                         borderWidth: 2,
                         borderColor: '#ffffff'
                     }]
@@ -466,21 +491,72 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '60%',
+                    cutout: '65%',
                     plugins: {
-                        legend: { 
-                            position: 'right',
-                            labels: {
-                                boxWidth: 12,
-                                font: { size: 10 }
-                            }
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } }
+                    }
+                }
+            });
+        }
+
+        function renderMacroChart() {
+            const ctx = document.getElementById('chartMacroBubble').getContext('2d');
+            
+            // Generate some dummy market data
+            const otherCompanies = Array.from({length: 15}, () => ({
+                x: Math.random() * 8 + 1, // Market share 1-9%
+                y: Math.random() * 40 + 10, // Interconnection index 10-50
+                r: Math.random() * 15 + 5  // Size
+            }));
+
+            cMacro = new Chart(ctx, {
+                type: 'bubble',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Reste du Marché',
+                            data: otherCompanies,
+                            backgroundColor: 'rgba(148, 163, 184, 0.5)', // Slate 400
+                            borderColor: 'rgba(100, 116, 139, 0.8)',
                         },
+                        {
+                            label: 'Émeraude IARD',
+                            data: [{ x: 18, y: 85, r: 25 }], // High market share, High interconn, Big size
+                            backgroundColor: 'rgba(225, 29, 72, 0.8)', // Rose 600
+                            borderColor: '#9f1239', // Rose 900
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    return context.label + ': ' + context.raw + '% de la croissance';
+                                label: function(ctx) {
+                                    if(ctx.datasetIndex === 1) {
+                                        return `Émeraude: ${ctx.raw.x}% PdM, Interconnexion: ${ctx.raw.y}`;
+                                    }
+                                    return `Concurrent: ${ctx.raw.x.toFixed(1)}% PdM`;
                                 }
                             }
+                        },
+                        annotation: {
+                            // If chartjs-plugin-annotation was loaded, we'd add lines here. 
+                            // Using standard scales instead to simulate zones.
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Part de Marché (%)', font: {weight: 'bold'} },
+                            min: 0, max: 25
+                        },
+                        y: {
+                            title: { display: true, text: 'Indice d\'Interconnexion', font: {weight: 'bold'} },
+                            min: 0, max: 100,
+                            grid: { color: (ctx) => ctx.tick.value === 70 ? 'rgba(244, 63, 94, 0.3)' : 'rgba(0,0,0,0.05)', lineWidth: (ctx) => ctx.tick.value === 70 ? 2 : 1 }
                         }
                     }
                 }
